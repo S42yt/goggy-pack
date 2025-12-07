@@ -37,19 +37,16 @@ jobs:
             pack_directory = '.'
             output_file_path = 'goggy-totem-pack.zip'
             
-            # Recompress and optimize textures
             [texture_options]
             image_data_compression_iterations = 5
             color_quantization_target = 'none'
             maximum_width_and_height = 8192
             
-            # Optimize models
             [model_options]
             minify_json = true
             delete_bloat_keys = true
             
-            # Optimize lang files
-            [json_file_options.'**/*.json']
+            [json_file_options]
             minify_json = true
 
       - name: Create unoptimized ZIP
