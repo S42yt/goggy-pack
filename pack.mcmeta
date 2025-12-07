@@ -1,0 +1,20 @@
+{
+  "pack": {
+    "pack_format": 64,
+    "description": "§dGoggy §7TotemPack",
+    "min_format":64,
+    "max_format":200,
+    "supported_formats": {
+      "min_inclusive": 64,
+      "max_inclusive": 200
+    },
+    "authors": [
+      {
+        "name": "S42"
+      },
+      {
+        "name": "p2pe"
+      }
+    ]
+  }
+}
