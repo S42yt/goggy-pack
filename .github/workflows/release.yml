@@ -1,0 +1,99 @@
+name: Create Release with PackSquash
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get version from tag
+        id: version
+        run: |
+          if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
+            VERSION=${GITHUB_REF#refs/tags/}
+          else
+            VERSION="v$(date +'%Y.%m.%d')-dev"
+          fi
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "Version: ${VERSION}"
+
+      - name: Run PackSquash
+        uses: ComunidadAylas/PackSquash-action@v4
+        with:
+          packsquash_version: latest
+          options: |
+            pack_directory = '.'
+            output_file_path = 'goggy-totem-pack.zip'
+            
+            # Recompress and optimize textures
+            [texture_options]
+            image_data_compression_iterations = 5
+            color_quantization_target = 'none'
+            maximum_width_and_height = 8192
+            
+            # Optimize models
+            [model_options]
+            minify_json = true
+            delete_bloat_keys = true
+            
+            # Optimize lang files
+            [json_file_options.'**/*.json']
+            minify_json = true
+
+      - name: Create unoptimized ZIP
+        run: |
+          zip -r goggy-totem-pack-unoptimized.zip . \
+            -x "*.git*" \
+            -x "*.github*" \
+            -x "*.DS_Store" \
+            -x "goggy-totem-pack.zip"
+
+      - name: Generate release notes
+        id: release_notes
+        run: |
+          cat > release_notes.md << 'EOF'
+          # Goggy Totem Pack ${{ steps.version.outputs.version }}
+                    
+          ## 📦 Downloads
+          
+          - **goggy-totem-pack.zip** - Optimized with PackSquash (recommended)
+          - **goggy-totem-pack-unoptimized.zip** - Original uncompressed version
+          
+          echo "Generated release notes"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: Goggy Totem Pack ${{ steps.version.outputs.version }}
+          body_path: release_notes.md
+          files: |
+            goggy-totem-pack.zip
+            goggy-totem-pack-unoptimized.zip
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload optimized pack as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: goggy-totem-pack-optimized
+          path: goggy-totem-pack.zip
+
+      - name: Upload unoptimized pack as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: goggy-totem-pack-unoptimized
+          path: goggy-totem-pack-unoptimized.zip
